@@ -51,14 +51,17 @@ DeviceFileEvents
 **Query Explanation:**
 
 We used a KQL query targeting the DeviceFileEvents table, scoped to device abbas-test-vm-m. The query was designed to look for file activity related to Tor Browser by filtering on:
+
 	•	Known Tor executables (tor.exe, torbrowser.exe, firefox.exe)
 	•	Tor-related folder path hints (e.g., \Tor Browser\, \TorBrowser\)
 	•	Included columns for ActionType, FileName, FolderPath, InitiatingProcessFileName, and command-line details to help determine how files were created, modified, or executed.
 
 **What We Were Looking For:**
+
 Evidence of Tor Browser installation or use — specifically file creation, modification, or execution events tied to Tor executables or paths within the last 14 days.
 
 **What We Discovered:**
+
 	•	Execution of the Tor Browser portable installer (tor-browser-windows-x86_64-portable-14.5.6.exe).
 	•	Creation of core Tor Browser components such as firefox.exe, plugin-container.exe, updater.exe, and related DLLs under C:\Users\azureuser\Desktop\Tor Browser\Browser\.
 	•	Modification of profile/configuration files (prefs.js, cookies.sqlite, places.sqlite), which indicates the Tor Browser was actively launched and used.
@@ -96,15 +99,18 @@ DeviceProcessEvents
 
 **Query Explanation:**
 
-We ran a KQL query against the DeviceProcessEvents table scoped to device abbas-test-vm-m. The query targeted:
+We ran a KQL query against the DeviceProcessEvents table scoped to device abbas-test-vm-m.
+The query targeted:
 	•	Known Tor executables (tor.exe, torbrowser.exe, firefox.exe)
 	•	Tor-related folder paths (e.g., \Tor Browser\, \TorBrowser\)
 	•	Firefox processes that originated specifically from the Tor Browser bundle rather than a standard system installation.
+ 
 We projected columns such as FileName, ProcessCommandLine, FolderPath, InitiatingProcessFileName, and InitiatingProcessCommandLine to determine the execution chain and process lineage.
-	•	What We Were Looking For:
-Evidence of Tor Browser execution, process spawning behavior, and relationships between the Tor launcher (tor.exe) and the associated Firefox processes.
+What We Were Looking For:
+	•	Evidence of Tor Browser execution, process spawning behavior, and relationships between the Tor launcher (tor.exe) and the associated Firefox processes.
 
 **What We Discovered:**
+
 	•	tor.exe was executed from C:\Users\azureuser\Desktop\Tor Browser\Browser\TorBrowser\Tor\ with configuration arguments (-f).
 	•	firefox.exe was launched multiple times from the Tor Browser directory, confirming user execution of the Tor Browser’s bundled Firefox instance.
 	•	Numerous child Firefox processes with the -contentproc command line were spawned, consistent with normal Tor Browser operation during an active browsing session.
