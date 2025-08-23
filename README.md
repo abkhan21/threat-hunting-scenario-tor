@@ -47,7 +47,11 @@ DeviceFileEvents
 | project Timestamp, DeviceName, InitiatingProcessAccountName, ActionType, FileName, FolderPath, SHA1, InitiatingProcessFileName, InitiatingProcessCommandLine
 | order by Timestamp desc
 ```
-(Results are attached for reference in the exported CSV)
+
+### Supporting Evidence
+
+- [DeviceFileEvents Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceFileEvents%7D)%20-%20Abbas%20Khan.csv)
+
 <img width="1212" alt="image" src="https://github.com/user-attachments/assets/71402e84-8767-44f8-908c-1805be31122d">
 
 ---
