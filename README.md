@@ -123,39 +123,31 @@ What We Were Looking For:
 
 ------------------------
 
-### 3. Searched the `DeviceProcessEvents` Table for TOR Browser Execution
+### 3. Searched the `DeviceNetworkEvents` Table for TOR-related Network Activity
 
-Searched for any indication that user "employee" actually opened the TOR browser. There was evidence that they did open it at `2024-11-08T22:17:21.6357935Z`. There were several other instances of `firefox.exe` (TOR) as well as `tor.exe` spawned afterwards.
+We ran a targeted KQL query against the DeviceNetworkEvents table to identify network activity related to Tor Browser on device abbas-test-vm-m. The search focused on known Tor ports (9001, 9030, 9050, 9051, 9150, 9151), which are typically used for Tor relays, directory services, SOCKS proxy, and control connections, as well as processes associated with Tor Browser (tor.exe, firefox.exe) and Tor-related domains (torproject.org, dist.torproject.org). By projecting fields such as InitiatingProcessFileName, RemoteIP, RemotePort, and RemoteUrl, the query was designed to uncover evidence of Tor network usage initiated from the workstation.
+The results showed outbound connections from Tor Browser processes to ports commonly associated with Tor bootstrap and relay activity, confirming that the device attempted to connect to the Tor network and that the browser was actively used to bypass network controls.
 
 **Query used to locate events:**
 
 ```kql
-DeviceProcessEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where FileName has_any ("tor.exe", "firefox.exe", "tor-browser.exe")  
-| project Timestamp, DeviceName, AccountName, ActionType, FileName, FolderPath, SHA256, ProcessCommandLine  
+let TargetDevice = "abbas-test-vm-m";
+let TorFileNames = dynamic(["tor.exe","torbrowser.exe","firefox.exe"]);
+let TorPathHints = dynamic(["\\Tor Browser\\","\\TorBrowser\\","\\Tor\\","/Tor Browser/","/TorBrowser/","/Tor/"]);
+let TorPorts = dynamic([9001,9030,9050,9051,9150,9151]); // ORPort, DirPort, SOCKS, Control, Tor Browser defaults
+let TorDomains = dynamic(["torproject.org","dist.torproject.org","www.torproject.org","aus1.torproject.org"]);
+DeviceNetworkEvents
+| where Timestamp > ago(14d)
+| where DeviceName =~ TargetDevice
+| where RemotePort in (TorPorts)
+   or (InitiatingProcessFileName in~ (TorFileNames))
+   or (InitiatingProcessFileName =~ "firefox.exe" and InitiatingProcessFolderPath has_any (TorPathHints))
+| project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessFolderPath,
+          LocalIP, LocalPort, RemoteIP, RemotePort, RemoteUrl, Protocol, InitiatingProcessCommandLine
 | order by Timestamp desc
 ```
+
 <img width="1212" alt="image" src="https://github.com/user-attachments/assets/b13707ae-8c2d-4081-a381-2b521d3a0d8f">
-
-------------------------
-
-### 4. Searched the `DeviceNetworkEvents` Table for TOR Network Connections
-
-Searched for any indication the TOR browser was used to establish a connection using any of the known TOR ports. At `2024-11-08T22:18:01.1246358Z`, an employee on the "threat-hunt-lab" device successfully established a connection to the remote IP address `176.198.159.33` on port `9001`. The connection was initiated by the process `tor.exe`, located in the folder `c:\users\employee\desktop\tor browser\browser\torbrowser\tor\tor.exe`. There were a couple of other connections to sites over port `443`.
-
-**Query used to locate events:**
-
-```kql
-DeviceNetworkEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where InitiatingProcessAccountName != "system"  
-| where InitiatingProcessFileName in ("tor.exe", "firefox.exe")  
-| where RemotePort in ("9001", "9030", "9040", "9050", "9051", "9150", "80", "443")  
-| project Timestamp, DeviceName, InitiatingProcessAccountName, ActionType, RemoteIP, RemotePort, RemoteUrl, InitiatingProcessFileName, InitiatingProcessFolderPath  
-| order by Timestamp desc
-```
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/87a02b5b-7d12-4f53-9255-f5e750d0e3cb">
 
 ------------------------
 
