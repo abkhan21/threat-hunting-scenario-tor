@@ -21,7 +21,7 @@ Management suspects that some employees may be using TOR browsers to bypass netw
 - **Check `DeviceProcessEvents`** for any signs of installation or usage.
 - **Check `DeviceNetworkEvents`** for any signs of outgoing connections over known TOR ports.
 
----
+------------------------
 
 ## Steps Taken
 
@@ -31,7 +31,7 @@ We ran a targeted KQL query against the DeviceFileEvents table to identify file 
 
 The results confirmed execution of the Tor Browser portable installer (tor-browser-windows-x86_64-portable-14.5.6.exe), creation of its core components (firefox.exe, plugin-container.exe, updater.exe, DLLs), modification of browser profile/configuration files (prefs.js, cookies.sqlite, places.sqlite), and creation of bundled text files (tor.txt, 000_README.txt, openssl.txt, etc.), all of which indicate that Tor Browser was actively installed and used.
 
-**Query Explanation:**
+**Query:**
 
 ```kql
 let TargetDevice = "abbas-test-vm-m";
@@ -48,30 +48,73 @@ DeviceFileEvents
 | order by Timestamp desc
 ```
 
-### Supporting Evidence
+**Query Explanation:**
+
+We used a KQL query targeting the DeviceFileEvents table, scoped to device abbas-test-vm-m. The query was designed to look for file activity related to Tor Browser by filtering on:
+	•	Known Tor executables (tor.exe, torbrowser.exe, firefox.exe)
+	•	Tor-related folder path hints (e.g., \Tor Browser\, \TorBrowser\)
+	•	Included columns for ActionType, FileName, FolderPath, InitiatingProcessFileName, and command-line details to help determine how files were created, modified, or executed.
+
+**What We Were Looking For:**
+Evidence of Tor Browser installation or use — specifically file creation, modification, or execution events tied to Tor executables or paths within the last 14 days.
+
+**What We Discovered:**
+	•	Execution of the Tor Browser portable installer (tor-browser-windows-x86_64-portable-14.5.6.exe).
+	•	Creation of core Tor Browser components such as firefox.exe, plugin-container.exe, updater.exe, and related DLLs under C:\Users\azureuser\Desktop\Tor Browser\Browser\.
+	•	Modification of profile/configuration files (prefs.js, cookies.sqlite, places.sqlite), which indicates the Tor Browser was actively launched and used.
+	•	Creation of text files (tor.txt, 000_README.txt, openssl.txt, etc.) as part of the installation, confirming a complete extraction of the Tor Browser bundle.
+ 
+**Supporting Evidence:**
 
 - [DeviceFileEvents Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceFileEvents%7D)%20-%20Abbas%20Khan.csv)
 
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/71402e84-8767-44f8-908c-1805be31122d">
-
----
+------------------------
 
 ### 2. Searched the `DeviceProcessEvents` Table
 
-Searched for any `ProcessCommandLine` that contained the string "tor-browser-windows-x86_64-portable-14.0.1.exe". Based on the logs returned, at `2024-11-08T22:16:47.4484567Z`, an employee on the "threat-hunt-lab" device ran the file `tor-browser-windows-x86_64-portable-14.0.1.exe` from their Downloads folder, using a command that triggered a silent installation.
+We ran a targeted KQL query against the DeviceProcessEvents table to identify process execution activity related to Tor Browser on device abbas-test-vm-m. The search focused on Tor executables (tor.exe, torbrowser.exe, firefox.exe), Tor-related folder paths (for example, \Tor Browser\, \TorBrowser\), and Firefox processes launched specifically from the Tor Browser bundle. By projecting columns such as FileName, ProcessCommandLine, FolderPath, InitiatingProcessFileName, and InitiatingProcessCommandLine, the query was designed to uncover evidence of Tor Browser execution, process lineage, and user interaction.
 
-**Query used to locate event:**
+The results confirmed execution of tor.exe from the Tor Browser directory, as well as multiple instances of firefox.exe being launched with supporting child processes (-contentproc), consistent with active Tor Browser usage. Explorer.exe was also observed as a parent process, indicating the browser was manually launched by the user from the Desktop.
+
+**Query:**
 
 ```kql
-
-DeviceProcessEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where ProcessCommandLine contains "tor-browser-windows-x86_64-portable-14.0.1.exe"  
-| project Timestamp, DeviceName, AccountName, ActionType, FileName, FolderPath, SHA256, ProcessCommandLine
+let TargetDevice = "abbas-test-vm-m";
+let TorFileNames = dynamic(["tor.exe","torbrowser.exe","firefox.exe"]);
+let TorPathHints = dynamic(["\\Tor Browser\\","\\TorBrowser\\","\\Tor\\","/Tor Browser/","/TorBrowser/","/Tor/"]);
+let TorPorts = dynamic([9001,9030,9050,9051,9150,9151]); // ORPort, DirPort, SOCKS, Control, Tor Browser defaults
+let TorDomains = dynamic(["torproject.org","dist.torproject.org","www.torproject.org","aus1.torproject.org"]);
+DeviceProcessEvents
+| where Timestamp > ago(14d)
+| where DeviceName =~ TargetDevice
+| where FileName in~ (TorFileNames)
+   or (FileName =~ "firefox.exe" and ProcessVersionInfoProductName has "Tor" or FolderPath has_any (TorPathHints))
+| project Timestamp, DeviceName, InitiatingProcessAccountName, FileName, ProcessCommandLine, FolderPath,
+          InitiatingProcessFileName, InitiatingProcessFolderPath, InitiatingProcessCommandLine, ProcessId, InitiatingProcessId
+| order by Timestamp desc
 ```
+
+**Query Explanation:**
+
+We ran a KQL query against the DeviceProcessEvents table scoped to device abbas-test-vm-m. The query targeted:
+	•	Known Tor executables (tor.exe, torbrowser.exe, firefox.exe)
+	•	Tor-related folder paths (e.g., \Tor Browser\, \TorBrowser\)
+	•	Firefox processes that originated specifically from the Tor Browser bundle rather than a standard system installation.
+We projected columns such as FileName, ProcessCommandLine, FolderPath, InitiatingProcessFileName, and InitiatingProcessCommandLine to determine the execution chain and process lineage.
+	•	What We Were Looking For:
+Evidence of Tor Browser execution, process spawning behavior, and relationships between the Tor launcher (tor.exe) and the associated Firefox processes.
+
+**What We Discovered:**
+	•	tor.exe was executed from C:\Users\azureuser\Desktop\Tor Browser\Browser\TorBrowser\Tor\ with configuration arguments (-f).
+	•	firefox.exe was launched multiple times from the Tor Browser directory, confirming user execution of the Tor Browser’s bundled Firefox instance.
+	•	Numerous child Firefox processes with the -contentproc command line were spawned, consistent with normal Tor Browser operation during an active browsing session.
+	•	Explorer.exe was observed as a parent process, which aligns with the user manually launching the Tor Browser from the Desktop.
+ 
+**Supporting Evidence:**
+
 <img width="1212" alt="image" src="https://github.com/user-attachments/assets/b07ac4b4-9cb3-4834-8fac-9f5f29709d78">
 
----
+------------------------
 
 ### 3. Searched the `DeviceProcessEvents` Table for TOR Browser Execution
 
@@ -88,7 +131,7 @@ DeviceProcessEvents
 ```
 <img width="1212" alt="image" src="https://github.com/user-attachments/assets/b13707ae-8c2d-4081-a381-2b521d3a0d8f">
 
----
+------------------------
 
 ### 4. Searched the `DeviceNetworkEvents` Table for TOR Network Connections
 
@@ -107,7 +150,7 @@ DeviceNetworkEvents
 ```
 <img width="1212" alt="image" src="https://github.com/user-attachments/assets/87a02b5b-7d12-4f53-9255-f5e750d0e3cb">
 
----
+------------------------
 
 ## Chronological Event Timeline 
 
@@ -156,16 +199,16 @@ DeviceNetworkEvents
 - **Action:** File creation detected.
 - **File Path:** `C:\Users\employee\Desktop\tor-shopping-list.txt`
 
----
+------------------------
 
 ## Summary
 
 The user "employee" on the "threat-hunt-lab" device initiated and completed the installation of the TOR browser. They proceeded to launch the browser, establish connections within the TOR network, and created various files related to TOR on their desktop, including a file named `tor-shopping-list.txt`. This sequence of activities indicates that the user actively installed, configured, and used the TOR browser, likely for anonymous browsing purposes, with possible documentation in the form of the "shopping list" file.
 
----
+------------------------
 
 ## Response Taken
 
 TOR usage was confirmed on the endpoint `threat-hunt-lab` by the user `employee`. The device was isolated, and the user's direct manager was notified.
 
----
+------------------------
