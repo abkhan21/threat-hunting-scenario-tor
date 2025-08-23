@@ -27,19 +27,27 @@ Management suspects that some employees may be using TOR browsers to bypass netw
 
 ### 1. Searched the `DeviceFileEvents` Table
 
-Searched for any file that had the string "tor" in it and discovered what looks like the user "employee" downloaded a TOR installer, did something that resulted in many TOR-related files being copied to the desktop, and the creation of a file called `tor-shopping-list.txt` on the desktop at `2024-11-08T22:27:19.7259964Z`. These events began at `2024-11-08T22:14:48.6065231Z`.
+We ran a targeted KQL query against the DeviceFileEvents table to identify file activity associated with Tor Browser on device abbas-test-vm-m. The search focused on Tor executables (tor.exe, torbrowser.exe, firefox.exe), known Tor-related folder paths (for example, \Tor Browser\, \TorBrowser\), and Tor network ports (9001, 9030, 9050, 9051, 9150, 9151), which are commonly used for Tor relays, directory services, SOCKS proxy, and control connections. By projecting columns such as ActionType, FileName, FolderPath, InitiatingProcessFileName, and CommandLine, the query was designed to uncover evidence of Tor Browser installation, execution, and potential usage activity.
 
-**Query used to locate events:**
+The results confirmed execution of the Tor Browser portable installer (tor-browser-windows-x86_64-portable-14.5.6.exe), creation of its core components (firefox.exe, plugin-container.exe, updater.exe, DLLs), modification of browser profile/configuration files (prefs.js, cookies.sqlite, places.sqlite), and creation of bundled text files (tor.txt, 000_README.txt, openssl.txt, etc.), all of which indicate that Tor Browser was actively installed and used.
+
+**Query Explanation:**
 
 ```kql
-DeviceFileEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where InitiatingProcessAccountName == "employee"  
-| where FileName contains "tor"  
-| where Timestamp >= datetime(2024-11-08T22:14:48.6065231Z)  
-| order by Timestamp desc  
-| project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA256, Account = InitiatingProcessAccountName
+let TargetDevice = "abbas-test-vm-m";
+let TorFileNames = dynamic(["tor.exe","torbrowser.exe","firefox.exe"]);
+let TorPathHints = dynamic(["\\Tor Browser\\","\\TorBrowser\\","\\Tor\\","/Tor Browser/","/TorBrowser/","/Tor/"]);
+let TorPorts = dynamic([9001,9030,9050,9051,9150,9151]); // ORPort, DirPort, SOCKS, Control, Tor Browser defaults
+let TorDomains = dynamic(["torproject.org","dist.torproject.org","www.torproject.org","aus1.torproject.org"]);
+DeviceFileEvents
+| where Timestamp > ago(14d)
+| where DeviceName =~ TargetDevice
+| where FileName in~ (TorFileNames)
+   or array_length(TorPathHints) > 0 and has_any(FolderPath, TorPathHints)
+| project Timestamp, DeviceName, InitiatingProcessAccountName, ActionType, FileName, FolderPath, SHA1, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by Timestamp desc
 ```
+(Results are attached for reference in the exported CSV)
 <img width="1212" alt="image" src="https://github.com/user-attachments/assets/71402e84-8767-44f8-908c-1805be31122d">
 
 ---
