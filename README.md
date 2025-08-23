@@ -118,7 +118,8 @@ What We Were Looking For:
  
 **Supporting Evidence:**
 
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/b07ac4b4-9cb3-4834-8fac-9f5f29709d78">
+- [DeviceProcessEvents Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceProcessEvents%7D).csv)
+
 
 ------------------------
 
