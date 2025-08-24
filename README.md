@@ -236,7 +236,7 @@ Potential text artifacts that could supplement evidence of Tor Browser installat
 - **Timestamp:** `2025-08-21 15:29 – 17:01 UTC`
 - **Event:** Execution of Tor Browser (firefox.exe).
 - **Action:** Multiple profile and preference files created/modified, including prefs.js, prefs-1.js, cookies.sqlite, formhistory.sqlite, and places.sqlite. Indicates Tor Browser was launched and actively used for browsing.
-- **File Path:** `:\Users\azureuser\Desktop\Tor Browser\Browser\TorBrowser\Data\profile\`
+- **File Path:** `C:\Users\azureuser\Desktop\Tor Browser\Browser\TorBrowser\Data\profile\`
 
 ### 4. Sustained Tor Browsing Session
 
