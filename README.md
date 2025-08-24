@@ -160,6 +160,12 @@ We projected columns such as InitiatingProcessFileName, InitiatingProcessFolderP
 
  Evidence of outbound connections from Tor Browser processes to Tor bootstrap nodes, relays, or related infrastructure — confirming not just installation or execution, but actual Tor network usage.
  
+	•	prefs.js / prefs-1.js → Updated when a user changes settings or when the browser writes runtime configurations.
+	•	cookies.sqlite → Stores cookies, which are only created/modified during web sessions.
+	•	formhistory.sqlite → Tracks form entries; only updated if a user interacts with websites.
+	•	places.sqlite → Contains browsing history and bookmarks; it is written to when URLs are visited.
+
+ 
 **What We Discovered:**
 
 	•	Outbound connections were observed from firefox.exe and tor.exe associated with the Tor Browser directory.
@@ -211,61 +217,65 @@ Potential text artifacts that could supplement evidence of Tor Browser installat
 
 ## Chronological Event Timeline 
 
-### 1. File Download - TOR Installer
+### 1. Tor Browser Installation
 
-- **Timestamp:** `2024-11-08T22:14:48.6065231Z`
-- **Event:** The user "employee" downloaded a file named `tor-browser-windows-x86_64-portable-14.0.1.exe` to the Downloads folder.
+- **Timestamp:** `2025-08-21 13:00:48 – 13:00:54 UTC`
+- **Event:** The user "azureuser" downloaded a file named `tor-browser-windows-x86_64-portable-14.5.6.exe` to the Downloads folder.
 - **Action:** File download detected.
-- **File Path:** `C:\Users\employee\Downloads\tor-browser-windows-x86_64-portable-14.0.1.exe`
+- **File Path:** `C:\Users\employee\Downloads\tor-browser-windows-x86_64-portable-14.5.6.exe`
 
-### 2. Process Execution - TOR Browser Installation
+### 2. Creation of Suspicious .txt Files
 
-- **Timestamp:** `2024-11-08T22:16:47.4484567Z`
-- **Event:** The user "employee" executed the file `tor-browser-windows-x86_64-portable-14.0.1.exe` in silent mode, initiating a background installation of the TOR Browser.
-- **Action:** Process creation detected.
-- **Command:** `tor-browser-windows-x86_64-portable-14.0.1.exe /S`
-- **File Path:** `C:\Users\employee\Downloads\tor-browser-windows-x86_64-portable-14.0.1.exe`
-
-### 3. Process Execution - TOR Browser Launch
-
-- **Timestamp:** `2024-11-08T22:17:21.6357935Z`
-- **Event:** User "employee" opened the TOR browser. Subsequent processes associated with TOR browser, such as `firefox.exe` and `tor.exe`, were also created, indicating that the browser launched successfully.
-- **Action:** Process creation of TOR browser-related executables detected.
-- **File Path:** `C:\Users\employee\Desktop\Tor Browser\Browser\TorBrowser\Tor\tor.exe`
-
-### 4. Network Connection - TOR Network
-
-- **Timestamp:** `2024-11-08T22:18:01.1246358Z`
-- **Event:** A network connection to IP `176.198.159.33` on port `9001` by user "employee" was established using `tor.exe`, confirming TOR browser network activity.
-- **Action:** Connection success.
-- **Process:** `tor.exe`
-- **File Path:** `c:\users\employee\desktop\tor browser\browser\torbrowser\tor\tor.exe`
-
-### 5. Additional Network Connections - TOR Browser Activity
-
-- **Timestamps:**
-  - `2024-11-08T22:18:08Z` - Connected to `194.164.169.85` on port `443`.
-  - `2024-11-08T22:18:16Z` - Local connection to `127.0.0.1` on port `9150`.
-- **Event:** Additional TOR network connections were established, indicating ongoing activity by user "employee" through the TOR browser.
-- **Action:** Multiple successful connections detected.
-
-### 6. File Creation - TOR Shopping List
-
-- **Timestamp:** `2024-11-08T22:27:19.7259964Z`
-- **Event:** The user "employee" created a file named `tor-shopping-list.txt` on the desktop, potentially indicating a list or notes related to their TOR browser activities.
-- **Action:** File creation detected.
+- **Timestamp:** `2025-08-21 15:53 – 15:55 UTC`
+- **Event:** User azureuser created and opened  `tor-shopping-list.txt`, showing activity beyond installation. While not direct evidence of illicit actions, the filename raises the risk profile and warrants investigation.
+- **Action:** User-created/modified .txt artifacts.
 - **File Path:** `C:\Users\employee\Desktop\tor-shopping-list.txt`
+
+### 3. Initial Tor Browser Execution
+
+- **Timestamp:** `2025-08-21 15:29 – 17:01 UTC`
+- **Event:** Execution of Tor Browser (firefox.exe).
+- **Action:** Multiple profile and preference files created/modified, including prefs.js, prefs-1.js, cookies.sqlite, formhistory.sqlite, and places.sqlite. Indicates Tor Browser was launched and actively used for browsing.
+- **File Path:** `:\Users\azureuser\Desktop\Tor Browser\Browser\TorBrowser\Data\profile\`
+
+### 4. Sustained Tor Browsing Session
+
+- **Timestamp:** `2025-08-21 17:00 – 17:05 UTC`
+- **Event:** Sustained browsing session.
+- **Action:** Continuous file modifications of session/profile databases confirmed ongoing use of Tor Browser.
+- **Process:** firefox.exe (launched from the Tor Browser bundle)
+- **File Path:** `C:\Users\azureuser\Desktop\Tor Browser\Browser\TorBrowser\Data\profile\`
+
 
 ------------------------
 
 ## Summary
 
-The user "employee" on the "threat-hunt-lab" device initiated and completed the installation of the TOR browser. They proceeded to launch the browser, establish connections within the TOR network, and created various files related to TOR on their desktop, including a file named `tor-shopping-list.txt`. This sequence of activities indicates that the user actively installed, configured, and used the TOR browser, likely for anonymous browsing purposes, with possible documentation in the form of the "shopping list" file.
+The investigation confirms that Tor Browser was downloaded, installed, and actively used on workstation `abbas-test-vm-m` by account azureuser. Installation was initiated via the Tor Browser portable installer `(tor-browser-windows-x86_64-portable-14.5.6.exe)`. Subsequent execution of firefox.exe inside the Tor Browser directory and modification of browser profile files strongly indicate that the user engaged in browsing through the Tor network. This aligns with the suspicious encrypted traffic patterns and validates management’s concerns of unauthorized use of Tor to bypass security controls.
+In addition, findings show user interaction beyond Tor installation. A file named `tor-shopping-list.txt` was created and opened on the Desktop, which may suggest preparation for or interest in dark web activity. While there is no direct evidence that purchases or illicit actions took place, the context of this file increases the risk profile of the incident and warrants escalation and further investigation to determine intent and potential impact.
 
 ------------------------
 
 ## Response Taken
 
-TOR usage was confirmed on the endpoint `threat-hunt-lab` by the user `employee`. The device was isolated, and the user's direct manager was notified.
+TOR usage was confirmed on the endpoint `abbas-test-vm-m` by the user `azureuser`. The device was isolated, and the user's direct manager was notified.
+
+**Documented IoCs:**
+
+	•	File path: C:\Users\azureuser\Desktop\Tor Browser\Browser\
+	•	Executables: tor-browser-windows-x86_64-portable-14.5.6.exe, firefox.exe, plugin-container.exe
+	•	Notable file: tor-shopping-list.txt
+	•	User: azureuser on abbas-test-vm-m
+ 
+**Recommended actions:**
+
+	•	Containment – Isolate the endpoint from the corporate network to prevent further Tor usage or possible data exfiltration.
+	•	Forensics – Securely collect and preserve the Tor Browser directory and related .txt files. Analyze places.sqlite and cookies.sqlite for evidence of browsing behavior. The contents of tor-shopping-list.txtshould •	be reviewed to understand its context and significance.
+	•	Escalation – Notify Legal, HR, and senior management due to the elevated risk associated with Tor usage and the presence of the tor-shopping-list.txt file. Consider law enforcement involvement only if forensic evidence confirms attempted or actual illegal activity.
+	•	User Handling – Restrict or suspend the azureuser account pending further investigation. Conduct a formal HR/security interview after forensic preservation, ensuring the user is given an opportunity to provide context.
+	•	Network Controls – Block Tor-related ports (9001, 9030, 9050, 9051, 9150, 9151) and domains. Implement detection rules for anonymizer tools.
+	•	Policy Enforcement – Remove the unauthorized Tor Browser installation and apply WDAC/AppLocker rules to prevent reinstallation. Re-emphasize acceptable use policies.
+	•	Awareness/Training – Provide awareness sessions on the risks of anonymizers, dark web access, and corporate liability. Notify management of confirmed TOR usage by azureuser for situational awareness.
+
 
 ------------------------
