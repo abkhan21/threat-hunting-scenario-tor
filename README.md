@@ -69,7 +69,7 @@ Evidence of Tor Browser installation or use — specifically file creation, modi
  
 **Supporting Evidence:**
 
-- [DeviceFileEvents Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceFileEvents%7D)%20-%20Abbas%20Khan.csv)
+- [DeviceFileEvents-TOR Related Files Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceFileEvents%7D)%20-%20Abbas%20Khan.csv)
 
 ------------------------
 
@@ -118,7 +118,7 @@ What We Were Looking For:
  
 **Supporting Evidence:**
 
-- [DeviceProcessEvents Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceProcessEvents%7D).csv)
+- [DeviceProcessEvents-TOR Activity Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceProcessEvents%7D).csv)
 
 
 ------------------------
@@ -167,7 +167,7 @@ We projected columns such as InitiatingProcessFileName, InitiatingProcessFolderP
 	•	Network traffic showed that the device attempted to establish communication over Tor, further confirming active use of the browser to bypass standard network controls.
  
 **Supporting Evidence:**
-- [DeviceProcessEvents Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceNetworkEvents%7D).csv)
+- [DeviceNetworkEvents-TOR Network Activity Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceNetworkEvents%7D).csv)
 
 
 ------------------------
@@ -204,7 +204,7 @@ Potential text artifacts that could supplement evidence of Tor Browser installat
 	•	User-generated text files on the Desktop such as New Text Document.txt and tor-shopping-list.txt.
 	•	tor-shopping-list.txt was later opened with Notepad.exe, demonstrating deliberate user interaction. While the filename alone does not prove intent, it raises the risk profile of the incident and warrants further forensic review.
 
-- [DeviceFileEvents2 Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceFileEvents%7D)-2.csv)
+- [DeviceFileEvents-Suspicious Files Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceFileEvents%7D)-2.csv)
 
 
 ------------------------
