@@ -147,7 +147,65 @@ DeviceNetworkEvents
 | order by Timestamp desc
 ```
 
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/b13707ae-8c2d-4081-a381-2b521d3a0d8f">
+**Query Explanation:**
+
+We ran a KQL query against the DeviceNetworkEvents table scoped to device abbas-test-vm-m. The query was designed to identify potential Tor Browser network activity by filtering on:
+
+	•	Known Tor network ports (9001, 9030, 9050, 9051, 9150, 9151) which are commonly used for Tor relays, directory services, SOCKS proxy connections, and control channels.
+	•	Processes associated with Tor Browser (tor.exe, torbrowser.exe, firefox.exe) to determine if outbound connections were initiated by these executables.
+	•	Tor-related domains (torproject.org, dist.torproject.org, www.torproject.org, aus1.torproject.org) to capture evidence of downloads, updates, or bootstrap activity.
+We projected columns such as InitiatingProcessFileName, InitiatingProcessFolderPath, RemoteIP, RemotePort, RemoteUrl, and Protocol to link process execution with network activity.
+
+**What We Were Looking For:**
+
+ Evidence of outbound connections from Tor Browser processes to Tor bootstrap nodes, relays, or related infrastructure — confirming not just installation or execution, but actual Tor network usage.
+ 
+**What We Discovered:**
+
+	•	Outbound connections were observed from firefox.exe and tor.exe associated with the Tor Browser directory.
+	•	Connections targeted Tor-related ports (SOCKS and relay ports), which aligns with expected Tor Browser bootstrap and relay behavior.
+	•	Network traffic showed that the device attempted to establish communication over Tor, further confirming active use of the browser to bypass standard network controls.
+ 
+**Supporting Evidence:**
+- [DeviceProcessEvents Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceNetworkEvents%7D).csv)
+
+
+------------------------
+
+### 4. Searched the DeviceFileEvents Table for .txt Artifacts
+
+We decided to pivot and search for .txt artifacts based on discoveries from earlier steps. The Tor Browser installation itself created multiple .txt files, confirming that text files are associated with Tor’s package. Combined with evidence of manual execution of the browser (via Explorer.exe) and confirmed network activity over Tor ports, it became important to identify whether any additional text files had been created or modified by the user. Such artifacts could provide context around the purpose of the Tor usage.
+
+**Query used to locate events:**
+
+```kql
+let TargetDevice = "abbas-test-vm-m";
+let Lookback = 14d;
+DeviceFileEvents
+| where Timestamp > ago(Lookback)
+| where DeviceName =~ TargetDevice
+| where ActionType in~ ("FileCreated","FileDeleted","FileRenamed","FileModified")
+| where tolower(FileName) endswith ".txt"
+| project Timestamp, DeviceName, InitiatingProcessAccountName, ActionType,
+         FileName, FolderPath, SHA1,
+         InitiatingProcessFileName, InitiatingProcessFolderPath, InitiatingProcessCommandLine
+| order by Timestamp desc
+```
+
+**Query Explanation:**
+We ran a KQL query against the DeviceFileEvents table scoped to device abbas-test-vm-m. The query was designed to capture all .txt file activity (created, modified, renamed, or deleted) within the last 14 days. By projecting fields such as ActionType, FileName, FolderPath, and InitiatingProcessFileName, the query helped identify both text files bundled with the Tor Browser installation and any additional user-generated text files that could provide context around Tor usage.
+
+**What We Were Looking For:**
+Potential text artifacts that could supplement evidence of Tor Browser installation and usage, especially those that might indicate direct user interaction.
+
+**What We Discovered:**
+
+	•	Several .txt files created as part of the Tor Browser bundle, including 000_README.txt, tor.txt, openssl.txt, lyrebird.txt, and conjure.txt, confirming full extraction of the package.
+	•	User-generated text files on the Desktop such as New Text Document.txt and tor-shopping-list.txt.
+	•	tor-shopping-list.txt was later opened with Notepad.exe, demonstrating deliberate user interaction. While the filename alone does not prove intent, it raises the risk profile of the incident and warrants further forensic review.
+
+- [DeviceFileEvents2 Results CSV](https://github.com/abkhan21/threat-hunting-scenario-tor/blob/main/AdvancedHuntingResults-(%7BDeviceFileEvents%7D)-2.csv)
+
 
 ------------------------
 
